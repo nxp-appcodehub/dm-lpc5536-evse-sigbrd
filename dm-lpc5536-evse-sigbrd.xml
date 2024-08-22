@@ -1,0 +1,36 @@
+<data:item xmlns:data="data" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="data ../../xsd/alp.xsd" id="dm-lpc5536-evse-sigbrd" type="demo" format="projectfile" versionSchema="1.0.0" name="EVSE SIGBRD1X on LPC5536">
+    <display_title>
+        EVSE-SIG-BRD using LPC5536/LPC55S36 for electric vehicle chargers
+    </display_title>
+    <overview>
+        <![CDATA[The EVSE-SIG-BRD is an add-on development board that supports electric vehicle supply equipment (EVSE) platform development. The board also supports the proximity pilot, ground fault circuit interrupter (GFCI), and relay drive features. The main host of the system is on a separate processor development board, for example, NXP i.MX RT1060 EVK, i.MX 8M Nano EVK, or S32G-VNP-RDB3. The ISO 15118 protocol stack and communication software run on the host processor.  The power-line communication(PLC) path is via the onboard HomePlug Green PHY (HPGP) transceiver (Lumissil IS32CG5317).]]>
+    </overview>
+    <toolchains>
+        <toolchain name="mcux"></toolchain>
+    </toolchains>
+    <families>
+        <family name="lpc"></family>
+    </families>
+    <nxp_compatible_hw>
+        <hw id="EVSE-SIG-BRD1X"></hw>
+    </nxp_compatible_hw>
+    <peripherals>
+        <peripheral name="uart"></peripheral>
+        <peripheral name="timer"></peripheral>
+        <peripheral name="spi"></peripheral>
+        <peripheral name="pwm"></peripheral>
+        <peripheral name="i2c"></peripheral>
+        <peripheral name="gpio"></peripheral>
+        <peripheral name="flash"></peripheral>
+        <peripheral name="clocks"></peripheral>
+        <peripheral name="adc"></peripheral>
+        <peripheral name="can"></peripheral>
+        <peripheral name="ethernet"></peripheral>
+    </peripherals>
+    <categories>
+        <category name="low_power"></category>
+        <category name="safety"></category>
+        <category name="security"></category>
+        <category name="industrial"></category>
+    </categories>
+</data:item>

@@ -1,0 +1,8 @@
+Release Name:              dm-lpc5536-evse-sigbrd
+Release Version:           1.1.5
+Outgoing License:          LA_OPT_Online Code Hosting NXP_Software_License - v1.2 October 2023 
+License in file:           License.txt
+Description:               EVSE-SIG-BRD EVSE Software
+Release Location:          https://github.com/nxp-appcodehub/dm-lpc5536-evse-sigbrd
+Origin:                    NXP (BSD-3-Clause)
+                           CMSIS (Apache-2.0) - https://github.com/ARM-software/CMSIS_5/releases/tag/5.8.0
