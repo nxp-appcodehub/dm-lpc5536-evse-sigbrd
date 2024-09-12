@@ -1,7 +1,5 @@
 /*
  * Copyright 2022-2024 NXP
- * All rights reserved.
- *
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -61,8 +59,8 @@ extern "C" {
 
 /*-------  Version Numbering of the SIGBOARD code -------*/
 #define MAJOR_VER               01      /* Major Release number */
-#define MINOR_VER               01      /* Minor Release number*/
-#define BUG_VER                 05
+#define MINOR_VER               01     /* Minor Release number*/
+#define BUG_VER                 07
 
 #define CONV_STR(s) #s
 #define DEF_TO_STR(s) CONV_STR(s)
@@ -70,7 +68,7 @@ extern "C" {
 #define SIGBOARD_VERSION DEF_TO_STR(MAJOR_VER)"." DEF_TO_STR(MINOR_VER)"." DEF_TO_STR(BUG_VER)
 
 /*SIG-BRD Hardware Version*/
-#define EVSE_SIGBRD_1X 0
+#define EVSE_SIGBRD_1X 1
 #define EVSE_SIGBRD_2X 2
 /*******************************************************************************
  * Variables

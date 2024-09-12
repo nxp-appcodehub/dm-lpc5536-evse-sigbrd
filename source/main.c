@@ -1,6 +1,5 @@
 /*
  * Copyright 2022-2024 NXP
- * All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -547,6 +546,10 @@ int main(void)
 
     /*Checking the pin status for getting the hardware version*/
 	g_sigboardHWVer = BOARD_PinStatus();
+	if (g_sigboardHWVer == 0)
+	{
+	    g_sigboardHWVer = EVSE_SIGBRD_1X;
+	}
 	BOARD_InitPins();
 	BOARD_BootClockPLL150M();
 	BOARD_InitDebugConsole();
