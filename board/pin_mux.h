@@ -1,6 +1,5 @@
 /*
  * Copyright 2021,2023-2024 NXP
- * All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -45,9 +44,9 @@ void BOARD_InitBootPins(void);
 #define IOCON_PIO_OPENDRAIN_DI 0x00u  /*!<@brief Open drain is disabled */
 #define IOCON_PIO_SLEW_STANDARD 0x00u /*!<@brief Standard mode, output slew rate control is enabled */
 #define IOCON_PIO_MODE_PULLUP 0x20u   /*!<@brief Selects pull-up function */
-#define IOCON_PIO_MODE_PULLDOWN 0x10u   /*!<@brief Selects pull-down function */
+#define IOCON_PIO_MODE_PULLDOWN 0x10u /*!<@brief Selects pull-down function */
 #define IOCON_PIO_FUNC3 0x03u         /*!<@brief Selects pin function 3 */
-
+#define IOCON_PIO_FUNC9 0x09u         /*!<@brief Selects pin function 9 */
 /*!
  * @brief Configures pin routing and optionally pin electrical features.
  *

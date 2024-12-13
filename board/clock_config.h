@@ -1,6 +1,5 @@
 /*
- * Copyright 2017-2021 NXP
- * All rights reserved.
+ * Copyright 2017-2021,2024 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -163,6 +162,11 @@ extern "C" {
  *
  */
 void BOARD_BootClockPLL1_150M(void);
+
+/*
+* @brief This api setups the PLL1 clock for External AFE Header ( P0-16)
+*/
+void BOARD_Configure_PLL1();
 
 #if defined(__cplusplus)
 }

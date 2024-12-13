@@ -41,26 +41,51 @@ extern "C" {
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
+#define DEMO_LPADC_CP_BASE              ADC0
+#define DEMO_LPADC_CURRENT_BASE         ADC0
+#define DEMO_LPADC_VOLTAGE_BASE         ADC1
 
-#define DEMO_LPADC_BASE                  ADC0
+#define DEMO_LPADC_I1_CHANNEL            0  // A
+#define DEMO_LPADC_I2_CHANNEL            0 // B
+#define DEMO_LPADC_I3_CHANNEL            2 // A
+
+#define DEMO_LPADC_U1_CHANNEL            1 // A
+#define DEMO_LPADC_U2_CHANNEL            2 // A
+#define DEMO_LPADC_U3_CHANNEL            3 // A
+
 #define DEMO_LPADC_CP_CHANNEL_1X         1U
 #define DEMO_LPADC_CP_CHANNEL_3X         3U
 #define DEMO_LPADC_PP_CHANNEL          	 4U
+
 #define DEMO_LPADC_CP_CMDID            	 1U                          /* CMD1 */
+
+#define DEMO_LPADC_I1_CMDID              2u
+#define DEMO_LPADC_I2_CMDID              3u
+#define DEMO_LPADC_I3_CMDID              4u
+
+
+#define DEMO_LPADC_U1_CMDID              1u
+#define DEMO_LPADC_U2_CMDID              2u
+#define DEMO_LPADC_U3_CMDID              3u
+
+#define DEMO_LPADC_CP_TRIGER_ID         0U
+#define DEMO_LPADC_CURRENT_TRIGER_ID    1U
+
+#define DEMO_LPADC_VOLTAGE_TRIGER_ID    0U
+
 #define DEMO_LPADC_VREF_SOURCE           kLPADC_ReferenceVoltageAlt3 /* VDDA */
 #define DEMO_LPADC_DO_OFFSET_CALIBRATION true
 #define DEMO_LPADC_USE_HIGH_RESOLUTION   true
-#define DEEP_SLEEP_TIMEOUT               10000  /*10 sec, Change this value to increase or decrease the timeout counter*/
-#define DEMO_UART_RX_PORT_TIMEOUT        10    /*Change this value to increase or decrease the timeout counter*/
-#define HUN_MILLI_SEC                    100    /*Meterology Library to be processed after 100ms delay*/
-#define TWO_SEC                          2000  /*Safety Library to be processed after 2s delay*/
-#define TWO_HUND_FIFTY_MSEC              250   /*D19 Toggling Freq*/
-#define ONE_HUND_TWENTYFIVE_MSEC         125   /*D18 Toggling Freq*/
+#define DEEP_SLEEP_TIMEOUT               30000  /* 30 sec, Change this value to increase or decrease the timeout counter*/
+#define DEMO_UART_RX_PORT_TIMEOUT        10    /* Change this value to increase or decrease the timeout counter*/
+#define TWO_SEC                          2000  /* Safety Library to be processed after 2s delay*/
+#define TWO_HUND_FIFTY_MSEC              250   /* D19 Toggling Freq*/
+#define ONE_HUND_TWENTYFIVE_MSEC         125   /* D18 Toggling Freq*/
 
 /*-------  Version Numbering of the SIGBOARD code -------*/
 #define MAJOR_VER               01      /* Major Release number */
-#define MINOR_VER               01     /* Minor Release number*/
-#define BUG_VER                 07
+#define MINOR_VER               02     /* Minor Release number*/
+#define BUG_VER                 00
 
 #define CONV_STR(s) #s
 #define DEF_TO_STR(s) CONV_STR(s)

@@ -1,6 +1,5 @@
 /*
- * Copyright 2017-2021 NXP
- * All rights reserved.
+ * Copyright 2017-2021,2024 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -372,5 +371,30 @@ void BOARD_BootClockPLL1_150M(void)
     /*!< Set SystemCoreClock variable. */
     SystemCoreClock = BOARD_BOOTCLOCKPLL1_150M_CORE_CLOCK;
 #endif
+}
+
+
+/*
+* @brief This api setups the PLL1 clock for External AFE Header ( P0-16)
+*/
+void BOARD_Configure_PLL1()
+{
+	POWER_PowerInit();
+	CLOCK_SetupExtClocking(16000000U);                            /* Enable XTALHF clock */
+	ANACTRL->XO32M_CTRL |= ANACTRL_XO32M_CTRL_ENABLE_SYSTEM_CLK_OUT_MASK;     /* Enable High speed Crystal oscillator output to system  */
+	/*!< Set up PLL1 */
+	CLOCK_AttachClk(kEXT_CLK_to_PLL1);                    /*!< Switch PLL1CLKSEL to EXT_CLK */
+	POWER_DisablePD(kPDRUNCFG_PD_PLL1);                  /* Ensure PLL is on  */
+	const pll_setup_t pll1Setup = {
+		.pllctrl = SYSCON_PLL1CTRL_CLKEN_MASK | SYSCON_PLL1CTRL_SELI(53U) | SYSCON_PLL1CTRL_SELP(31U),
+		.pllndec = SYSCON_PLL1NDEC_NDIV(25U),//25
+		.pllpdec = SYSCON_PLL1PDEC_PDIV(25U),//25
+		.pllmdec = SYSCON_PLL1MDEC_MDIV(512U),// 2048 if CLKOUTDIV = 4  //512 if CLKOUTDIV = 1 //150
+		.pllRate = 150000000U,
+		.flags =  PLL_SETUPFLAG_WAITLOCK
+	};
+	CLOCK_SetPLL1Freq(&pll1Setup);                        /*!< Configure PLL1 to the desired values */
+	SYSCON->CLKOUTSEL = 0x05 ;
+	SYSCON->CLKOUTDIV = 0x0 ;
 }
 

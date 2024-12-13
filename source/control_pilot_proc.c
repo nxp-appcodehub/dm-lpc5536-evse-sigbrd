@@ -13,9 +13,6 @@
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
-#define PP_CTIMER          CTIMER0         /* Timer 0 */
-#define PP_CTIMER_CLK_FREQ CLOCK_GetCTimerClkFreq(0U)
-
 #define STATEA_MIN_LEVEL				58000
 #define STATEA_MAX_LEVEL				62000
 #define STATEB_MIN_LEVEL				52000
@@ -71,7 +68,6 @@ volatile uint32_t risingCaptureVal = 0;
 volatile uint32_t fallingCaptureVal = 0;
 volatile uint32_t ThisPeriodTmrVal, LastPeriodTmrVal, TmrPeriodCounts;
 volatile uint32_t ThisOnTmrVal, TmrOnCounts;
-volatile uint32_t Ctimer1Val;
 volatile float pwmOnPercent = 0.0f;
 volatile uint8_t checkTmrCounts = 0;
 volatile uint8_t activatePilotSwitch = 0;
@@ -132,8 +128,6 @@ static void CP_PWMInit(uint8_t dutyCyclePercent)
  */
 void CP_Init(void)
 {
-	ctimer_config_t config;
-
 	/*
 	 * pwmConfig.enableDebugMode = false;
 	 * pwmConfig.enableWait = false;
@@ -195,25 +189,6 @@ void CP_Init(void)
     CLOCK_EnableClock(kCLOCK_Gpio1);
 
     CP_SetDutyCycle(0U);
-
-    /* Use 12 MHz clock for some of the Ctimers */
-    CLOCK_SetClkDiv(kCLOCK_DivCtimer0Clk, 0u, false);
-    CLOCK_SetClkDiv(kCLOCK_DivCtimer0Clk, 1u, true);
-    CLOCK_AttachClk(kFRO_HF_to_CTIMER0);
-
-    /* Initialize CTIMER for PWM period and ON time measurement */
-    CTIMER_GetDefaultConfig(&config);
-
-    /* Set pre-scale to run timer count @1MHz */
-    config.prescale = (PP_CTIMER_CLK_FREQ/1000000) - 1;
-    config.mode = kCTIMER_TimerMode;
-    CTIMER_Init(PP_CTIMER, &config);
-    /* set MAT3 to 1000 counts @1MHz clock counter = 1 msec interval */
-    CTIMER_UpdatePwmPulsePeriod(PP_CTIMER, 3U, 1000);
-    PP_CTIMER->EMR |= CTIMER_EMR_EMC3_MASK;
-    PP_CTIMER->MCR |= CTIMER_MCR_MR3R_MASK;
-
-    CTIMER_StartTimer(PP_CTIMER);
 }
 
 /*!

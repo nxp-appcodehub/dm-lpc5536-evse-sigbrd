@@ -12,7 +12,7 @@
  ******************************************************************************/
 typedef void (*vector_entry)(void);
 
-__attribute__((used, section(".intvec"))) const vector_entry __vector_table[] = {
+__attribute__((used, section(".intvec"))) const vector_entry __VECTOR_TABLE[] = {
 
 (vector_entry_t)(uint32_t)& __BOOT_STACK_ADDRESS,            // The initial stack pointer
 ResetISR,                          // The reset handler

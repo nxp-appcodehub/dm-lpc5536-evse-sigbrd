@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2022-2024 NXP
- * All rights reserved.
+ * Copyright 2022-2024 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -113,7 +112,7 @@ void Comm_Process_Advertisement(void);
 /*!
  * @brief Communication process/task.
  */
-void Comm_Process(void);
+void Comm_Process(void* param);
 /*@}*/
 
 #if defined(__cplusplus)

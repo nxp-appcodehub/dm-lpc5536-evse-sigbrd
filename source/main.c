@@ -13,18 +13,19 @@
 #include "safety_application.h"
 #endif
 
-#ifdef ENABLE_METROLOGY
-#include "meterology_application.h"
-#endif
+#include "metrology_application.h"
+#include "adc_manager.h"
+
 
 #ifdef LPC_TO_SJA_SPI_COMM
 #include "fsl_spi.h"
 #endif
+
+#include "external_afe.h"
+#include "fsl_crc.h"
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
-#define DEMO_LPADC_IRQn                  ADC0_IRQn
-#define DEMO_LPADC_IRQ_HANDLER_FUNC      ADC0_IRQHandler
 
 #define PP_INT_PIN_INT1_SRC              kINPUTMUX_GpioPort0Pin28ToPintsel
 
@@ -85,7 +86,7 @@ volatile bool g_GFCIState;
 /*Flag managing the GFCI state advertisement to Host*/
 volatile bool g_advertiseGFCIState = false;
 lpadc_conv_result_t g_LpadcChnPPResultConfigStruct;
-lpadc_conv_trigger_config_t mLpadcTriggerConfigStruct;
+
 const uint32_t g_LpadcFullRange   = 65536U;
 const uint32_t g_LpadcResultShift = 0U;
 char state;
@@ -97,12 +98,9 @@ uint32_t g_excludeFromDS[2];
 uint32_t g_wakeupFromDS[4];
 volatile uint32_t g_LpadcInterruptCounter    = 0U;
 bool g_GFCIPresent = false;
-/*Variable to manage the meterology frequency*/
-volatile uint32_t g_MetrologyDelayCounter = HUN_MILLI_SEC;
 volatile uint32_t g_SafetyDelayCounter = TWO_SEC;
 volatile bool g_SafetyLibRunTimeFlag = true;
 uint8_t g_sigboardHWVer=0;
-
 
 typedef enum
 {
@@ -131,12 +129,6 @@ char *ppStates[kPPDetectedMaxVal] = {
 void ctimer_match3_callback(uint32_t flags)
 {
     static uint8_t s_toggleLED = 0;
-
-    /*Counter for managing the Meterology Processing*/
-    if(g_MetrologyDelayCounter > 0)
-    {
-    	g_MetrologyDelayCounter--;
-    }
 
     /*Counter for managing the Safety Library Processing*/
     if(g_SafetyDelayCounter > 0)
@@ -187,31 +179,6 @@ void ctimer_match3_callback(uint32_t flags)
 
 }
 
-void DEMO_LPADC_IRQ_HANDLER_FUNC(void)
-{
-	g_LpadcInterruptCounter++;
-#if (defined(FSL_FEATURE_LPADC_FIFO_COUNT) && (FSL_FEATURE_LPADC_FIFO_COUNT == 2U))
-	if (LPADC_GetConvResult(DEMO_LPADC_BASE, &g_LpadcChnCPResultConfigStruct, 0U))
-#else
-		if (LPADC_GetConvResult(DEMO_LPADC_BASE, &g_LpadcChnCPResultConfigStruct))
-#endif /* FSL_FEATURE_LPADC_FIFO_COUNT */
-		{
-			g_LpadcChnCPConversionCompletedFlag = true;
-			g_LpadcChnCPConversionCompletedCount++;
-		}
-
-#if (defined(FSL_FEATURE_LPADC_FIFO_COUNT) && (FSL_FEATURE_LPADC_FIFO_COUNT == 2U))
-	if (LPADC_GetConvResult(DEMO_LPADC_BASE, &g_LpadcChnPPResultConfigStruct, 1U))
-#else
-		if (LPADC_GetConvResult(DEMO_LPADC_BASE, &g_LpadcChnPPResultConfigStruct))
-#endif /* FSL_FEATURE_LPADC_FIFO_COUNT */
-		{
-			g_LpadcChnPPConversionCompletedFlag = true;
-		}
-
-	SDK_ISR_EXIT_BARRIER;
-}
-
 /*!
  * @brief Pin initialization for Wakeup from Deep-Sleep Mode
  */
@@ -258,93 +225,6 @@ void APP_LED_Init(void)
 	CTIMER_RegisterCallBack(APP_CTIMER, &ctimer_callback_table_app[0], kCTIMER_MultipleCallback);
 	CTIMER_SetupMatch(APP_CTIMER, CTIMER_MAT_OUT, &matchConfig0);
 	CTIMER_StartTimer(APP_CTIMER);
-}
-
-/*!
- * @brief ADC initialization function
- */
-void ADC_Init(void)
-{
-	lpadc_config_t mLpadcConfigStruct;
-	lpadc_conv_command_config_t mLpadcCommandConfigStruct;
-
-	/* setup ADC channels for PP and CP measurement */
-	LPADC_GetDefaultConfig(&mLpadcConfigStruct);
-	mLpadcConfigStruct.enableAnalogPreliminary = true;
-#if defined(DEMO_LPADC_VREF_SOURCE)
-	mLpadcConfigStruct.referenceVoltageSource = DEMO_LPADC_VREF_SOURCE;
-#endif /* DEMO_LPADC_VREF_SOURCE */
-#if defined(FSL_FEATURE_LPADC_HAS_CTRL_CAL_AVGS) && FSL_FEATURE_LPADC_HAS_CTRL_CAL_AVGS
-	mLpadcConfigStruct.conversionAverageMode = kLPADC_ConversionAverage128;
-#endif /* FSL_FEATURE_LPADC_HAS_CTRL_CAL_AVGS */
-	LPADC_Init(DEMO_LPADC_BASE, &mLpadcConfigStruct);
-
-#if defined(FSL_FEATURE_LPADC_HAS_CTRL_CALOFS) && FSL_FEATURE_LPADC_HAS_CTRL_CALOFS
-#if defined(FSL_FEATURE_LPADC_HAS_OFSTRIM) && FSL_FEATURE_LPADC_HAS_OFSTRIM
-	/* Request offset calibration. */
-#if defined(DEMO_LPADC_DO_OFFSET_CALIBRATION) && DEMO_LPADC_DO_OFFSET_CALIBRATION
-	LPADC_DoOffsetCalibration(DEMO_LPADC_BASE);
-#else
-	LPADC_SetOffsetValue(DEMO_LPADC_BASE, DEMO_LPADC_OFFSET_VALUE_A, DEMO_LPADC_OFFSET_VALUE_B);
-#endif /* DEMO_LPADC_DO_OFFSET_CALIBRATION */
-#endif /* FSL_FEATURE_LPADC_HAS_OFSTRIM */
-	/* Request gain calibration. */
-	LPADC_DoAutoCalibration(DEMO_LPADC_BASE);
-#endif /* FSL_FEATURE_LPADC_HAS_CTRL_CALOFS */
-
-#if (defined(FSL_FEATURE_LPADC_HAS_CFG_CALOFS) && FSL_FEATURE_LPADC_HAS_CFG_CALOFS)
-	/* Do auto calibration. */
-	LPADC_DoAutoCalibration(DEMO_LPADC_BASE);
-#endif /* FSL_FEATURE_LPADC_HAS_CFG_CALOFS */
-
-	/* Set conversion CMD configuration for CP. */
-	LPADC_GetDefaultConvCommandConfig(&mLpadcCommandConfigStruct);
-
-	if(g_sigboardHWVer == EVSE_SIGBRD_1X)
-	{
-		mLpadcCommandConfigStruct.channelNumber = DEMO_LPADC_CP_CHANNEL_1X;
-	}
-
-	else if(g_sigboardHWVer == EVSE_SIGBRD_2X)
-	{
-		mLpadcCommandConfigStruct.channelNumber = DEMO_LPADC_CP_CHANNEL_3X;
-	}
-
-#if defined(DEMO_LPADC_USE_HIGH_RESOLUTION) && DEMO_LPADC_USE_HIGH_RESOLUTION
-	mLpadcCommandConfigStruct.conversionResolutionMode = kLPADC_ConversionResolutionHigh;
-#endif /* DEMO_LPADC_USE_HIGH_RESOLUTION */
-	mLpadcCommandConfigStruct.sampleChannelMode = kLPADC_SampleChannelDualSingleEndBothSide;
-	LPADC_SetConvCommandConfig(DEMO_LPADC_BASE, DEMO_LPADC_CP_CMDID, &mLpadcCommandConfigStruct);
-	/* select alt en chan 4B - Proximity Pilot PP */
-	if(g_sigboardHWVer == EVSE_SIGBRD_1X)
-	{
-		ADC0->CMD[DEMO_LPADC_CP_CMDID-1].CMDL |= ADC_CMDL_ALTBEN(DEMO_LPADC_CP_CHANNEL_1X) | ADC_CMDL_ALTB_ADCH(DEMO_LPADC_PP_CHANNEL);
-	}
-
-	else if(g_sigboardHWVer == EVSE_SIGBRD_2X)
-	{
-		ADC0->CMD[DEMO_LPADC_CP_CMDID-1].CMDL |= ADC_CMDL_ALTBEN(DEMO_LPADC_CP_CHANNEL_3X) | ADC_CMDL_ALTB_ADCH(DEMO_LPADC_PP_CHANNEL);
-	}
-
-
-	/* Set trigger configuration for CP. */
-	LPADC_GetDefaultConvTriggerConfig(&mLpadcTriggerConfigStruct);
-	mLpadcTriggerConfigStruct.enableHardwareTrigger = true;
-	mLpadcTriggerConfigStruct.targetCommandId       = DEMO_LPADC_CP_CMDID;
-#if (defined(FSL_FEATURE_LPADC_FIFO_COUNT) && (FSL_FEATURE_LPADC_FIFO_COUNT == 2))
-	mLpadcTriggerConfigStruct.channelAFIFOSelect = 0U;
-	mLpadcTriggerConfigStruct.channelBFIFOSelect = 1U;
-#endif /* FSL_FEATURE_LPADC_FIFO_COUNT */
-	LPADC_SetConvTriggerConfig(DEMO_LPADC_BASE, 0U, &mLpadcTriggerConfigStruct); /* Configurate the trigger0. */
-
-	/* Enable the watermark interrupt. */
-#if (defined(FSL_FEATURE_LPADC_FIFO_COUNT) && (FSL_FEATURE_LPADC_FIFO_COUNT == 2U))
-	LPADC_EnableInterrupts(DEMO_LPADC_BASE, kLPADC_FIFO0WatermarkInterruptEnable);
-#else
-	LPADC_EnableInterrupts(DEMO_LPADC_BASE, kLPADC_FIFOWatermarkInterruptEnable);
-#endif /* FSL_FEATURE_LPADC_FIFO_COUNT */
-	NVIC_SetPriority(DEMO_LPADC_IRQn, 1);
-	EnableIRQ(DEMO_LPADC_IRQn);
 }
 
 /*!
@@ -506,12 +386,29 @@ static void App_Relay_Callback(RELAY_INFOTYPE kInfoType, uint32_t param)
 	}
 }
 
+/*!
+ * @brief Init for CRC-16-CCITT.
+ * @details Init CRC peripheral module for CRC-16/CCITT-FALSE protocol:
+ *          width=16 poly=0x1021 init=0xffff refin=false refout=false xorout=0x0000 check=0x29b1
+ *          http://reveng.sourceforge.net/crc-catalogue/
+ * name="CRC-16/CCITT-FALSE"
+ * Beware the CRC algo must match the AFE CRC algo and the flash algo
+ */
+void CRC_ModuleInit()
+{
+    crc_config_t config;
+    CRC_GetDefaultConfig(&config);
+    CRC_Init(CRC0, &config);
+}
 
 /*!
  * @brief Main function
  */
 int main(void)
 {
+	/* Enable flash cache */
+    SYSCON->LPCAC_CTRL &= ~SYSCON_LPCAC_CTRL_DIS_LPCAC_MASK;
+
 	/* Board pin, clock, debug console init */
 	/* attach 12 MHz clock to FLEXCOMM0 (debug console) */
 	CLOCK_SetClkDiv(kCLOCK_DivFlexcom0Clk, 0u, false);
@@ -525,14 +422,18 @@ int main(void)
 	CLOCK_SetClkDiv(kCLOCK_DivFlexcom1Clk, 0u, false);
 	CLOCK_SetClkDiv(kCLOCK_DivFlexcom1Clk, 1u, true);
 	CLOCK_AttachClk(kFRO12M_to_FLEXCOMM1);
-#ifdef LPC_TO_SJA_SPI_COMM
-	/* attach 12 MHz clock to SPI2 */
-	CLOCK_SetClkDiv(kCLOCK_DivFlexcom2Clk, 0u, false);
-	CLOCK_SetClkDiv(kCLOCK_DivFlexcom2Clk, 1u, true);
-	CLOCK_AttachClk(kFRO12M_to_FLEXCOMM2);
-#endif
 
 	RESET_ClearPeripheralReset(kFC0_RST_SHIFT_RSTn);
+
+	 /* attach 12 MHz clock to SPI7 */
+	CLOCK_SetClkDiv(kCLOCK_DivFlexcom7Clk, 0u, false);
+	CLOCK_SetClkDiv(kCLOCK_DivFlexcom7Clk, 1u, true);
+	CLOCK_AttachClk(kFRO12M_to_FLEXCOMM7);
+	/* reset FLEXCOMM for SPI */
+	RESET_PeripheralReset(kFC7_RST_SHIFT_RSTn);
+
+	/* reset DMA0 */
+	RESET_PeripheralReset(kDMA0_RST_SHIFT_RSTn);
 
 	/* Init output HPGP_RESET GPIO. */
 	GPIO_PortInit(GPIO, 0U);
@@ -543,7 +444,6 @@ int main(void)
 	RESET_PeripheralReset(kFC2_RST_SHIFT_RSTn);
 #endif
 
-
     /*Checking the pin status for getting the hardware version*/
 	g_sigboardHWVer = BOARD_PinStatus();
 	if (g_sigboardHWVer == 0)
@@ -552,9 +452,14 @@ int main(void)
 	}
 	BOARD_InitPins();
 	BOARD_BootClockPLL150M();
+
 	BOARD_InitDebugConsole();
 
-
+	/* setup PLL1 for External AFE clock */
+	BOARD_Configure_PLL1();
+	/* setup the crc module used by External AFE and Flash Saftey check */
+	CRC_ModuleInit();
+	
     /* Analog components excluded from Deep Sleep mode*/
     g_excludeFromDS[0]  = kPDRUNCFG_PD_DCDC | kPDRUNCFG_PD_FRO192M | kPDRUNCFG_PD_FRO32K;
     g_excludeFromDS[1]  = 0;
@@ -564,9 +469,6 @@ int main(void)
     g_wakeupFromDS[1]  = 0;
     g_wakeupFromDS[2]  = 0;
     g_wakeupFromDS[3]  = 0;
-
-    CLOCK_SetClkDiv(kCLOCK_DivAdc0Clk, 2U, true);
-    CLOCK_AttachClk(kFRO_HF_to_ADC0);
 
     /* Disable VREF power down */
     POWER_DisablePD(kPDRUNCFG_PD_VREF);
@@ -581,7 +483,7 @@ int main(void)
     ANACTRL_EnableVref1V(ANACTRL, true);
 
     /*Initialize the ADC*/
-    ADC_Init();
+    ADC_CP_PP_Init();
 
     SYSCON->PWM1SUBCTL |=
     		(SYSCON_PWM1SUBCTL_CLK0_EN_MASK | SYSCON_PWM1SUBCTL_CLK1_EN_MASK | SYSCON_PWM1SUBCTL_CLK2_EN_MASK);
@@ -605,29 +507,42 @@ int main(void)
     /* Initialize for APP default task/LED toggle */
     APP_LED_Init();
 
-    /* Initialize the Software interrupt for Comm_Process*/
-    SWISR0_HandlerInit (PRI_LVL2, Comm_Process);
+    /* Initialize the Software interrupt for Comm_Process */
+    ChangeIRQHandler (COMM_PROCESS_IRQ, PRI_LVL2, Comm_Process);
+    /* Initialize the Software interrupt for Metering_Process */
+    ChangeIRQHandler (AFE_PROCESS_IRQ, PRI_LVL3, Metering_Process);
+    ChangeIRQHandler (SAR_PROCESS_IRQ, PRI_LVL4, Metering_Process);
+
 
 #ifdef ENABLE_IEC60730B
 	safetyTest_afterReset();
 #endif
 
-#ifdef ENABLE_METROLOGY
 	/*Initialize the metering APIs*/
-	Metering_Init();
-#endif
+	/* Initialize ADC metering mode - always executing.*/
+	Metering_Init(kMetADCMode);
+	Metering_MetrologyHWInit(kMetADCMode);
+
+	/*Set AFE metering mode*/
+	Metering_Init(kMetAFEMode);
+	Metering_MetrologyHWInit(kMetAFEMode);
 
 	/* Initialization done */
 	/* Entering main loop */
 	while (1U)
 	{
+		if(AFE_SPIDetected() == true)
+		{
+			Metering_SetMetrologyMode(kMetAFEMode);
+			AFE_SetSPIDetection(false);
+		}
 
 #ifdef ENABLE_IEC60730B
 
 		if(g_SafetyDelayCounter == 0)
 		{
-		  safetyTest_runTime();
-		  g_SafetyDelayCounter = TWO_SEC;
+			safetyTest_runTime();
+			g_SafetyDelayCounter = TWO_SEC;
 		}
 #endif
 
@@ -664,27 +579,19 @@ int main(void)
 			g_sleepTimeout = DEEP_SLEEP_TIMEOUT;
 			g_SleepNotification = SLEEP_NOTIFICATION_DISABLED;
 			g_uartRxTimeout = DEMO_UART_RX_PORT_TIMEOUT;
-			g_MetrologyDelayCounter = HUN_MILLI_SEC;
 			g_SafetyDelayCounter = TWO_SEC;
 			g_SafetyLibRunTimeFlag = false;
 
-			/*Turn off the LED1 & LED2 before entering into sleep mode*/
+			/* Turn off the LED1 & LED2 before entering into sleep mode */
 		    GPIO_PinWrite(GPIO, BOARD_LED1_PORT, BOARD_LED1_PIN, 1u);
 		    GPIO_PinWrite(GPIO, BOARD_LED2_PORT, BOARD_LED2_PIN, 1u);
 
-			/*Entering the device into Deep-Sleep mode*/
+			/* Entering the device into Deep-Sleep mode */
 			POWER_EnterDeepSleep(g_excludeFromDS, 0x0, g_wakeupFromDS, 0x0);
-		}
+			/* Restart execution after wake-up from Deep-Sleep mode */
+			NVIC_SystemReset();
 
-#ifdef ENABLE_METROLOGY
-		if(g_MetrologyDelayCounter == 0)
-		{
-			/*Process the Metering Data*/
-			Metering_Process();
-			g_MetrologyDelayCounter = HUN_MILLI_SEC;
 		}
-#endif
-
 	}
 
 }

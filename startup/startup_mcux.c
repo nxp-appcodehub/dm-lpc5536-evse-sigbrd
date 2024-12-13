@@ -32,7 +32,7 @@ extern uint32_t m_sec_fs_ram_start;
  ******************************************************************************/
 typedef void (*vector_entry)(void);
 void write_vtor(int32_t);
-extern const vector_entry __vector_table;
+extern const vector_entry __VECTOR_TABLE;
 /*******************************************************************************
  * Code
  ******************************************************************************/
@@ -126,7 +126,7 @@ void common_startup(void)
     Watchdog_refresh;
 #endif
 
-    write_vtor((int32_t)&__vector_table);
+    write_vtor((int32_t)&__VECTOR_TABLE);
 
     // Reenable interrupts
     __asm volatile ("cpsie i");

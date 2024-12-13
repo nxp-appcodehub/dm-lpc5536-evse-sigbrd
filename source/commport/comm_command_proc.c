@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2022-2024 NXP
- * All rights reserved.
+ * Copyright 2022-2024 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -9,6 +8,7 @@
 #include "comm_port_driver.h"
 #include "math.h"
 #include "pin_mux.h"
+#include "metrology_application.h"
 
 /*******************************************************************************
  * Definitions
@@ -30,7 +30,7 @@ char *g_firmwareVersion;
 SLEEP_NOTIFICATION_STATUS g_SleepNotification = SLEEP_NOTIFICATION_DISABLED;
 extern uint16_t g_sleepTimeout;
 extern uint16_t g_uartRxTimeout;
-
+extern met_mode_t met_mode;
 /*******************************************************************************
  * Prototypes
  ******************************************************************************/
@@ -114,7 +114,7 @@ void Comm_Process_Advertisement(void)
  * - Checks whether the meter is powered up enough with supply voltage to sustain communication
  * - Executes any proprietary command for the meter and responds to the communication client.
  */
-void Comm_Process(void)
+void Comm_Process(void* param)
 {
 	uint8  i;
 	int16 ret_val;
@@ -191,6 +191,16 @@ void Comm_Process(void)
 			responseBufIndex += sprintf(&uartTxBuffer[i][responseBufIndex],  "%05d[f]\r", g_LpadcChnPPResultConfigStruct.convValue);
 			break;
 
+		case 'g':
+			/* get command */
+			/* get metering mode value */
+			uartTxBuffer[i][responseBufIndex++] = '0' + Metering_GetMetrologyMode();
+			uartTxBuffer[i][responseBufIndex++] = '[';
+			uartTxBuffer[i][responseBufIndex++] = uartRxBuffer[i][0];
+			uartTxBuffer[i][responseBufIndex++] = ']';
+			uartTxBuffer[i][responseBufIndex++] = END_OF_MSG;
+			break;
+
 			/* commands 'i' to 'z' for EVSE sigbrd set commands */
 		case 'i':
 			/* set command */
@@ -230,6 +240,30 @@ void Comm_Process(void)
 			uartTxBuffer[i][responseBufIndex++] = END_OF_MSG;
 			break;
 
+		case 'm':
+		{
+			/* set command */
+			/* set metering mode */
+
+			if ( (uartRxBuffer[i][1] < '0') || kMetModeSize <= (uartRxBuffer[i][1] - '0'))
+			{
+				/*Sending NACK for unrecognized commands*/
+				uartTxBuffer[i][responseBufIndex++] = '[';
+				uartTxBuffer[i][responseBufIndex++] = 'n';
+				uartTxBuffer[i][responseBufIndex++] = ']';
+			}
+			else {
+				Metering_ConfigureMetrologyMode(uartRxBuffer[i][1] - '0');
+				uartTxBuffer[i][responseBufIndex++] = '0' + Metering_GetMetrologyMode();
+			}
+
+			uartTxBuffer[i][responseBufIndex++] = '[';
+			uartTxBuffer[i][responseBufIndex++] = uartRxBuffer[i][0];
+			uartTxBuffer[i][responseBufIndex++] = ']';
+			uartTxBuffer[i][responseBufIndex++] = END_OF_MSG;
+			break;
+		}
+
 		case 'v':
 		{
 			g_firmwareVersion = SIGBOARD_VERSION;
@@ -256,10 +290,73 @@ void Comm_Process(void)
 			break;
 		}
 
+		case 'x':
+		{
+			uartTxBuffer[i][responseBufIndex++]= (met_mode == kMetAFEMode) ? '0' : '1' ;
+			uartTxBuffer[i][responseBufIndex++] = '[';
+			uartTxBuffer[i][responseBufIndex++] = uartRxBuffer[i][0];
+			uartTxBuffer[i][responseBufIndex++] = ']';
+			uartTxBuffer[i][responseBufIndex++] = END_OF_MSG;
+			break;
+		}
 		case '0':	/* I, U, P commands */
 		case '1':	/* I */
 		case '2':	/* U */
 		case '3':	/* P */
+			if(Metering_GetMetrologyMode() == kMetUARTMode)
+			{
+				/* commands '0' to '9' for meter commands */
+				if(i == UART_CONTROL_INDEX)
+				{
+					/* Pass-through control port RDX data to meter port TXD */
+					memcpy(uartTxBuffer[UART_METER_INDEX],
+							uartRxBuffer[UART_CONTROL_INDEX],
+							uartRxBufIndex[UART_CONTROL_INDEX]);
+
+					respondingMetCmd = true;
+				}
+			}
+			else
+			{
+				/* kMetAFEMode */
+				switch(uartRxBuffer[i][0])
+				{
+				case '0':
+				{
+					sprintf(&uartTxBuffer[UART_CONTROL_INDEX][responseBufIndex],  "%2.2f[1]%3.2f[2]%4.2f[3]1.0[4]\r", irms1[kMetAFEMode], urms1[kMetAFEMode], p1[kMetAFEMode]);
+
+					responseBufIndex += strlen(uartTxBuffer[UART_CONTROL_INDEX]);
+					break;
+				}
+				case '1':
+				{
+					sprintf(&uartTxBuffer[UART_CONTROL_INDEX][responseBufIndex],  "%2.2f[1]\r", irms1[kMetAFEMode]);
+
+					responseBufIndex += strlen(uartTxBuffer[UART_CONTROL_INDEX]);
+					break;
+				}
+				case '2':
+				{
+					sprintf(&uartTxBuffer[UART_CONTROL_INDEX][responseBufIndex],  "%3.2f[2]\r", urms1[kMetAFEMode]);
+
+					responseBufIndex += strlen(uartTxBuffer[UART_CONTROL_INDEX]);
+					break;
+				}
+				case '3':
+				{
+					sprintf(&uartTxBuffer[UART_CONTROL_INDEX][responseBufIndex],  "%4.2f[3]", p1[kMetAFEMode]);
+
+					responseBufIndex += strlen(uartTxBuffer[UART_CONTROL_INDEX]);
+					break;
+				}
+				default: break;
+				}
+
+			}
+			break;
+
+		case '5': /* TWR-KM3x board s/w version */
+		{
 			/* commands '0' to '9' for meter commands */
 			if(i == UART_CONTROL_INDEX)
 			{
@@ -270,7 +367,7 @@ void Comm_Process(void)
 
 				respondingMetCmd = true;
 			}
-			break;
+		}
 
 		default:
 			/*Sending NACK for unrecognized commands*/
@@ -299,12 +396,10 @@ void Comm_Process(void)
 	{
 		if(i == UART_METER_INDEX)
 		{
-			/* response received from meter UART RXD port */
 			/* Pass-through control port TDX data to meter port RXD */
 			memcpy(uartTxBuffer[UART_CONTROL_INDEX],
 					uartRxBuffer[UART_METER_INDEX],
 					uartRxBufIndex[UART_METER_INDEX]);
-
 			UART_Transmit(UART_CONTROL_INDEX, uartTxBuffer[UART_CONTROL_INDEX], uartRxBufIndex[UART_METER_INDEX]);
 			respondingMetCmd = false;
 			uartRxPortStatus[UART_METER_INDEX] = UART_IDLE;
@@ -314,7 +409,6 @@ void Comm_Process(void)
 	}
 
 }
-
 
 /*!
  * @brief It sends the notification to meter whenever the charging status changes.

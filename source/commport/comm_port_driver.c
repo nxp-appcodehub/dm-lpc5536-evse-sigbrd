@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2022-2024 NXP
- * All rights reserved.
+ * Copyright 2022-2024 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -152,7 +151,7 @@ void UARTHandler(UART_INDEX uart_index)
 
 		if (uartRxPortStatus[uart_index] == UART_PROCESSING)
 		{
-			NVIC_CallIsr(SWISR_VECTOR_0);
+			NVIC_CallIsr(COMM_PROCESS_IRQ);
 		}
 	}
 

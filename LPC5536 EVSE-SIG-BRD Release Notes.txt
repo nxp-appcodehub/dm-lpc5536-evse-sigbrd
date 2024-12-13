@@ -1,4 +1,18 @@
 LPC5536 EVSE-SIG-BRD Release Notes:
+
+Version: 1.2.0
+Date: 25th Nov 2024
+
+Features: 
+1)  Remove support for met only mode (Simulation of metrology).
+2)  Supports SAR ADC meterology mode, running as default.
+3)  Supports parallel execution of SAR ADC with SPI based external AFE, when SPI is connected.
+4)  Supports parallel execution of SAR ADC with UART KM based metrology, when UART is connected.
+5)  Prioritize the SAR ADC with external AFE based metrology whenever both UART and SPI connections available.
+6)  Support added for Current and Voltage scaling for both SAR and AFE.
+7)  Support added for SPI detection and appropriate mode selection.
+
+
 Version: 1.1.7
 Date: 05th June 2024
 

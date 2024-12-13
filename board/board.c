@@ -1,6 +1,5 @@
 /*
- * Copyright 2017-2018,2023 NXP
- * All rights reserved.
+ * Copyright 2017-2018,2023-2024 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -13,6 +12,25 @@
 #include "fsl_i2c.h"
 #endif /* SDK_I2C_BASED_COMPONENT_USED */
 
+#if defined(__CC_ARM) || defined(__ARMCC_VERSION)
+extern uint32_t __Vectors[];
+extern uint32_t Image$$ARM_LIB_STACK$$ZI$$Limit;
+#define __VECTOR_TABLE __Vectors
+#define __StackTop     Image$$ARM_LIB_STACK$$ZI$$Limit
+#elif defined(__MCUXPRESSO)
+extern uint32_t __VECTOR_TABLE[];
+extern void _vStackTop(void);
+#elif defined(__ICCARM__)
+extern uint32_t __vector_table[];
+extern uint32_t CSTACK$$Limit;
+#define __VECTOR_TABLE __vector_table
+#define __StackTop     CSTACK$$Limit
+#elif defined(__GNUC__)
+extern uint32_t __StackTop;
+extern uint32_t __Vectors[];
+#define __VECTOR_TABLE __Vectors
+#endif
+
 /*******************************************************************************
  * Variables
  ******************************************************************************/
@@ -20,6 +38,7 @@
 /*******************************************************************************
  * Code
  ******************************************************************************/
+
 /* Initialize debug console. */
 void BOARD_InitDebugConsole(void)
 {

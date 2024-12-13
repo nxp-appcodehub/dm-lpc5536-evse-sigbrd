@@ -1,6 +1,5 @@
 /*
  * Copyright 2022-2024 NXP
- * All rights reserved.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -39,9 +38,6 @@ GFCI_CALLBACK g_gfciAppCallback;
  */
 void GFCI_Init(void)
 {
-	/* Select ADC0 trigger input from PWM1_SM0_MUX_TRIG0 */
-	INPUTMUX->ADC0_TRIG[0] = INPUTMUX_ADC0_TRIGN_ADC0_TRIG_TRIGIN(0x20);
-
 	/* Connect GFCI_INT to PINT */
 	INPUTMUX_AttachSignal(INPUTMUX, kPINT_PinInt0, GFCI_INT_PIN_INT0_SRC);
 

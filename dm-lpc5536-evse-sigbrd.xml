@@ -13,6 +13,7 @@
     </families>
     <nxp_compatible_hw>
         <hw id="EVSE-SIG-BRD1X"></hw>
+        <hw id="EVSE-SIG-BRD2X"></hw>
     </nxp_compatible_hw>
     <peripherals>
         <peripheral name="uart"></peripheral>

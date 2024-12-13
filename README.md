@@ -6,9 +6,9 @@
 * The board also supports the proximity pilot, ground fault circuit interrupter (GFCI), and relay drive features.
 * The main host of the system is on a separate processor development board, for example, NXP i.MX RT1060 EVK, i.MX 8M Nano EVK, or S32G-VNP-RDB3.
 * The ISO 15118 protocol stack and communication software run on the host processor. 
-* The power-line communication(PLC) path is via the onboard HomePlug Green PHY (HPGP) transceiver (Lumissil IS32CG5317).
+* The power-line communication (PLC) path is via the onboard HomePlug Green PHY (HPGP) transceiver (Lumissil IS32CG5317).
 
-#### Boards: EVSE-SIG-BRD1X
+#### Boards: EVSE-SIG-BRD1X or EVSE-SIG-BRD2X
 #### Categories: Security, Low Power, Industrial, Safety
 #### Toolchains: [MCUXpresso IDE V11.9.0 or later](https://www.nxp.com/design/design-center/software/development-software/mcuxpresso-software-and-tools-:MCUXPRESSO?tid=vanmcuxpresso).
 
@@ -17,7 +17,6 @@
 2. [Hardware](#step2)
 3. [Setup](#step3)
 4. [Support](#step4)
-5. [Release Notes](#step5)
 
 ## 1. Software<a name="step1"></a>
 * This software demonstrates the usage of EVSE-SIG-BRD firmware for EVSE application. 
@@ -31,8 +30,10 @@ EVSE-SIG-BRD software block diagram.
 </p>
 
 ## 2. Hardware<a name="step2"></a>
-* For this demo you will need the following hardware.
-  [EVSE-SIG-BRD1X](https://www.nxp.com/part/EVSE-SIG-BRD1X).
+For this demo, you will need the following hardware.
+  [EVSE-SIG-BRD1X](https://www.nxp.com/part/EVSE-SIG-BRD1X)
+  OR
+  [EVSE-SIG-BRD2X](https://www.nxp.com/part/EVSE-SIG-BRD2X).
 <p align="center">  <img src="images/top_view.svg" /></p>
 
 <p style="text-align: center;">
@@ -66,7 +67,7 @@ EVSE-SIG-BRD top-side view.
 ### 3.2.5 Step 6
 * To resume the operation, click the Run button.
 
-### 3.3 If user wants to program the board directly then select the binary evsesigbrd_sw_v1.1.5.bin from Binary folder and flash the board using GUI Flash Tool of MCUXpresso IDE.
+### 3.3 If KM is used as an external AFE, use binary that enables KM as an AFE feature. KM binaries are provided in release tab. External AFE feature over SPI works only with EVSE-SIG-BRD2X.
 
 ## 4. Support<a name="step4"></a>
 
@@ -79,8 +80,4 @@ Questions regarding the content/correctness of this example can be entered as Is
 [![Follow us on Facebook](https://img.shields.io/badge/Facebook-Follow%20us%20on%20Facebook-blue.svg)](https://www.facebook.com/nxpsemi/)
 [![Follow us on Twitter](https://img.shields.io/badge/Twitter-Follow%20us%20on%20Twitter-white.svg)](https://twitter.com/NXP)
 
-## 5. Release Notes<a name="step5"></a>
-| Version | Description / Update                    |                      Date |
-| :-----: | --------------------------------------- | ------------------------: |
-|   1.0   | Initial release on Application Code Hub | July 8<sup>th</sup> 2024 |
 
